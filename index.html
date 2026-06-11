@@ -380,6 +380,11 @@ button:hover {
         <h4 style="margin:0 0 5px;">💳 Payment via M-Pesa</h4>
         <p style="margin:0 0 10px;font-size:14px;color:#555;">Complete payment to confirm your order</p>
         <p style="font-size:18px;font-weight:bold;margin:0 0 10px;">Total: $<span id="payment-total">0</span></p>
+        <div id="mpesa-manual" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;margin-bottom:10px;text-align:center;">
+            <p style="margin:0 0 5px;font-weight:bold;color:#166534;">Send payment to M-Pesa:</p>
+            <p style="font-size:22px;font-weight:bold;color:#166534;margin:0;">0766 847 187</p>
+            <p style="margin:5px 0 0;font-size:12px;color:#555;">Then share the confirmation via WhatsApp</p>
+        </div>
         <button id="pay-btn" onclick="payNow()" style="background:#25D366;padding:12px 20px;font-size:16px;">Pay Now</button>
         <div id="payment-status" style="margin-top:8px;font-size:14px;"></div>
     </div>
@@ -416,11 +421,8 @@ fetch('/config').then(r => r.json()).then(cfg => {
         localStorage.setItem('user_fullname', cfg.userName);
     }
     if (!cfg.paymentReady) {
-        const paySection = document.getElementById('payment-section');
-        if (paySection) {
-            paySection.querySelector('p:first-of-type').textContent = '⚠ Payment not configured yet. Contact seller to complete payment.';
-            document.getElementById('pay-btn').style.display = 'none';
-        }
+        document.getElementById('mpesa-manual').style.display = 'block';
+        document.getElementById('pay-btn').style.display = 'none';
     }
 }).catch(() => {
     document.getElementById('waFloat').href = 'https://wa.me/255766847187';
