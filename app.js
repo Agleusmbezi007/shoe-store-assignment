@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const db = require('./db');
 const { notifyOrder } = require('./notify');
+const { createPayment, verifyPayment, verifyWebhookSignature, generateTxRef } = require('./payment');
 
 const app = express();
 
@@ -17,7 +18,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 // CONFIG ENDPOINT (so frontend uses same SELLER_PHONE as backend)
 
 app.get('/config', (req, res) => {
-    res.json({ sellerPhone: process.env.SELLER_PHONE || '255766847187' });
+    const flwKey = process.env.FLW_PUBLIC_KEY && !process.env.FLW_PUBLIC_KEY.includes('xxxxx') ? process.env.FLW_PUBLIC_KEY : null;
+    res.json({
+        sellerPhone: process.env.SELLER_PHONE || '255766847187',
+        flutterwaveKey: flwKey,
+        flutterwaveReady: !!flwKey
+    });
 });
 
 // SERVE HTML FILES
@@ -160,6 +166,105 @@ app.post('/submit-order', (req, res) => {
 
         return res.json({ success: true, message: 'Order placed successfully!', waLinks });
 
+    });
+
+});
+
+
+// PAYMENT ROUTES
+
+app.post('/create-payment', (req, res) => {
+
+    const { user_name, email, phone, amount, items } = req.body;
+
+    if (!user_name || !email || !amount || !items) {
+        return res.json({ success: false, message: 'Missing required fields' });
+    }
+
+    createPayment(user_name, email, phone || '', parseFloat(amount), items).then(result => {
+        if (result.error) {
+            return res.json({ success: false, message: result.error });
+        }
+
+        db.query(
+            'INSERT INTO transactions (tx_ref, user_name, email, phone, amount, items) VALUES (?, ?, ?, ?, ?, ?)',
+            [result.txRef, user_name, email, phone || '', amount, JSON.stringify(items)],
+            (err) => {
+                if (err) console.error('Failed to save transaction:', err);
+            }
+        );
+
+        return res.json({ success: true, link: result.link, txRef: result.txRef });
+    });
+
+});
+
+
+app.get('/payment-callback', (req, res) => {
+
+    const { transaction_id, status, tx_ref } = req.query;
+
+    if (status === 'successful' || status === 'completed') {
+        verifyPayment(transaction_id).then(verifyRes => {
+            if (verifyRes.status === 'success' && verifyRes.data?.status === 'successful') {
+                db.query('UPDATE transactions SET flw_id = ?, status = ? WHERE tx_ref = ?',
+                    [transaction_id, 'completed', tx_ref], (err) => {
+                        if (err) console.error('Update failed:', err);
+                    }
+                );
+                return res.redirect('/shop?payment=success');
+            } else {
+                db.query('UPDATE transactions SET flw_id = ?, status = ? WHERE tx_ref = ?',
+                    [transaction_id, 'failed', tx_ref], (err) => {
+                        if (err) console.error('Update failed:', err);
+                    }
+                );
+                return res.redirect('/shop?payment=failed');
+            }
+        });
+    } else {
+        db.query('UPDATE transactions SET status = ? WHERE tx_ref = ?',
+            ['cancelled', tx_ref], (err) => {
+                if (err) console.error('Update failed:', err);
+            }
+        );
+        return res.redirect('/shop?payment=cancelled');
+    }
+
+});
+
+
+app.post('/webhook', (req, res) => {
+
+    const signature = req.headers['verif-hash'];
+
+    if (!verifyWebhookSignature(req.body, signature)) {
+        return res.status(401).json({ status: 'error', message: 'Invalid signature' });
+    }
+
+    const { txRef, status, id } = req.body?.data || {};
+
+    if (txRef && status === 'successful') {
+        db.query('UPDATE transactions SET flw_id = ?, status = ? WHERE tx_ref = ?',
+            [id, 'completed', txRef], (err) => {
+                if (err) console.error('Webhook update failed:', err);
+            }
+        );
+    }
+
+    return res.status(200).json({ status: 'success' });
+
+});
+
+
+app.get('/payment-status', (req, res) => {
+
+    const { txRef } = req.query;
+    if (!txRef) return res.json({ status: 'unknown' });
+
+    db.query('SELECT status FROM transactions WHERE tx_ref = ?', [txRef], (err, rows) => {
+        if (err || rows.length === 0) return res.json({ status: 'unknown' });
+        return res.json({ status: rows[0].status });
     });
 
 });

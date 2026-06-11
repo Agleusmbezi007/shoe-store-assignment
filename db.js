@@ -48,6 +48,23 @@ connection.connect((err) => {
                 total DECIMAL(10,2) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
+        `);
+
+        connection.query(`
+            CREATE TABLE IF NOT EXISTS transactions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                tx_ref VARCHAR(255) NOT NULL UNIQUE,
+                flw_id VARCHAR(255),
+                user_name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                phone VARCHAR(50),
+                amount DECIMAL(10,2) NOT NULL,
+                currency VARCHAR(10) DEFAULT 'TZS',
+                status VARCHAR(50) DEFAULT 'pending',
+                items JSON,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
         `, (err) => {
             if (err) {
                 console.error('Failed to create tables:', err.message);
