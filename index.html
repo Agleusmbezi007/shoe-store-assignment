@@ -268,7 +268,7 @@ button:hover {
     <h2>👟 Shoe Store</h2>
     <div>
         Cart: <span id="cart-count">0</span>
-        <a href="/admin" style="margin-left:10px;color:#aaa;text-decoration:none;font-size:13px;">Admin</a>
+        <a id="admin-link" href="/admin" style="margin-left:10px;color:#aaa;text-decoration:none;font-size:13px;">Admin</a>
         <button onclick="logout()" style="margin-left:10px;background:red;padding:6px 12px;border:none;color:white;border-radius:5px;cursor:pointer">Logout</button>
     </div>
 </header>
@@ -332,6 +332,10 @@ fetch('/config').then(r => r.json()).then(cfg => {
     if (!cfg.paymentReady) {
         document.getElementById('mpesa-manual').style.display = 'block';
         document.getElementById('pay-btn').style.display = 'none';
+    }
+    var adminLink = document.getElementById('admin-link');
+    if (adminLink) {
+        adminLink.style.display = cfg.isAdmin ? '' : 'none';
     }
 }).catch(() => {
     document.getElementById('waFloat').href = 'https://wa.me/255766847187';

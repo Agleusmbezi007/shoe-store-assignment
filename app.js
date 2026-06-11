@@ -32,6 +32,13 @@ function requireAuth(req, res, next) {
     res.redirect('/?redirect=' + encodeURIComponent(req.originalUrl));
 }
 
+function requireAdmin(req, res, next) {
+    if (req.session && req.session.isAdmin) {
+        return next();
+    }
+    res.redirect('/');
+}
+
 
 // LOGOUT ROUTE
 
@@ -64,6 +71,7 @@ app.get('/config', (req, res) => {
         sellerPhone: process.env.SELLER_PHONE || '255766847187',
         paymentReady: ready,
         loggedIn: !!(req.session && req.session.userId),
+        isAdmin: !!(req.session && req.session.isAdmin),
         userName: req.session?.userName || ''
     });
 });
@@ -78,7 +86,7 @@ app.get('/shop', requireAuth, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/admin', requireAuth, (req, res) => {
+app.get('/admin', requireAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
@@ -162,6 +170,10 @@ app.post('/login', (req, res) => {
             req.session.userId = user.id;
             req.session.userName = user.fullname;
             req.session.userEmail = user.email;
+            req.session.isAdmin = user.is_admin === 1 || user.is_admin === true;
+            if (req.session.isAdmin) {
+                return res.redirect('/admin');
+            }
             const redirect = req.query.redirect || '/shop';
             return res.redirect(`/shop?fullname=${encodeURIComponent(user.fullname)}&email=${encodeURIComponent(user.email)}`);
         } else {

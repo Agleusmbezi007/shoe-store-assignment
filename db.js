@@ -34,6 +34,7 @@ connection.connect((err) => {
                 phone VARCHAR(50) NOT NULL,
                 email VARCHAR(255) NOT NULL UNIQUE,
                 password VARCHAR(255) NOT NULL,
+                is_admin BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
@@ -82,6 +83,7 @@ connection.connect((err) => {
             } else {
                 console.log('Tables ready');
                 seedProducts(connection);
+                seedAdmin(connection);
             }
         });
     });
@@ -111,6 +113,22 @@ function seedProducts(conn) {
             if (err2) console.error('Seed failed:', err2.message);
             else console.log('Products seeded: ' + initial.length);
         });
+    });
+}
+
+function seedAdmin(conn) {
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@shoestore.com';
+    const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
+    conn.query('SELECT id FROM users WHERE email = ?', [adminEmail], (err, result) => {
+        if (err || result.length > 0) return;
+        conn.query(
+            'INSERT INTO users (fullname, phone, email, password, is_admin) VALUES (?, ?, ?, ?, TRUE)',
+            ['Admin', '0000000000', adminEmail, adminPass],
+            (err2) => {
+                if (err2) console.error('Admin seed failed:', err2.message);
+                else console.log('Admin account created: ' + adminEmail);
+            }
+        );
     });
 }
 
