@@ -1,4 +1,4 @@
-const SELLER_PHONE = process.env.SELLER_PHONE || '255792196957';
+const SELLER_PHONE = process.env.SELLER_PHONE || '255766847187';
 
 function waLink(phone, message) {
   return `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
