@@ -23,7 +23,7 @@ header {
 
 .container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
     padding: 20px;
 }
@@ -76,6 +76,10 @@ button:hover {
     padding: 3px 8px;
     margin: 0 5px;
 }
+
+.cart-item button {
+    margin-top: 0;
+}
 </style>
 </head>
 
@@ -83,7 +87,10 @@ button:hover {
 
 <header>
     <h2>👟 Shoe Store</h2>
-    <div>Cart: <span id="cart-count">0</span></div>
+    <div>
+        Cart: <span id="cart-count">0</span>
+        <button onclick="logout()" style="margin-left:15px;background:red;padding:6px 12px;border:none;color:white;border-radius:5px;cursor:pointer">Logout</button>
+    </div>
 </header>
 
 <div class="container">
@@ -107,6 +114,76 @@ button:hover {
         <h3>Puma Classic</h3>
         <p>$40</p>
         <button onclick="addToCart('Puma Classic',40)">Add to Cart</button>
+    </div>
+
+    <div class="product">
+        <img src="images/yeezybustas-jordan-shoes-1777572_1920.jpg" alt="">
+        <h3>Yeezy Boost</h3>
+        <p>$60</p>
+        <button onclick="addToCart('Yeezy Boost',60)">Add to Cart</button>
+    </div>
+
+    <div class="product">
+        <img src="images/starkvisuals-sneakers-3714730_1920.jpg" alt="">
+        <h3>Stark Sneakers</h3>
+        <p>$48</p>
+        <button onclick="addToCart('Stark Sneakers',48)">Add to Cart</button>
+    </div>
+
+    <div class="product">
+        <img src="images/megashock-jordan-4657349_1920.jpg" alt="">
+        <h3>Mega Shock</h3>
+        <p>$55</p>
+        <button onclick="addToCart('Mega Shock',55)">Add to Cart</button>
+    </div>
+
+    <div class="product">
+        <img src="images/marzuk-sneakers-5578127_1920.jpg" alt="">
+        <h3>Marzuk Sneakers</h3>
+        <p>$42</p>
+        <button onclick="addToCart('Marzuk Sneakers',42)">Add to Cart</button>
+    </div>
+
+    <div class="product">
+        <img src="images/marzuk-nike-5644799.jpg" alt="">
+        <h3>Marzuk Nike</h3>
+        <p>$52</p>
+        <button onclick="addToCart('Marzuk Nike',52)">Add to Cart</button>
+    </div>
+
+    <div class="product">
+        <img src="images/lovechin-ai-generated-8644121.png" alt="">
+        <h3>Lovechin Special</h3>
+        <p>$38</p>
+        <button onclick="addToCart('Lovechin Special',38)">Add to Cart</button>
+    </div>
+
+    <div class="product">
+        <img src="images/grailify-nike-5226091_1920.jpg" alt="">
+        <h3>Grailify Nike</h3>
+        <p>$47</p>
+        <button onclick="addToCart('Grailify Nike',47)">Add to Cart</button>
+    </div>
+
+    <div class="product">
+        <img src="images/grailify-nike-5041718_1920.jpg" alt="">
+        <h3>Grailify Classic</h3>
+        <p>$44</p>
+        <button onclick="addToCart('Grailify Classic',44)">Add to Cart</button>
+    </div>
+
+    <div class="product">
+        <img src="images/deanmoth-tennis-7968714_1920.png" alt="">
+        <h3>Deanmoth Tennis</h3>
+        <p>$35</p>
+        <button onclick="addToCart('Deanmoth Tennis',35)">Add to Cart</button>
+    </div>
+
+    <div class="product">
+        <img src="images/alexas_fotos-baby-shoes-974715_1920.jpg" alt="">
+        <h3>Alexa Baby Shoes</h3>
+        <p>$25</p>
+        <button onclick="addToCart('Alexa Baby Shoes',25)">Add to Cart</button>
     </div>
 
 </div>
@@ -149,6 +226,11 @@ function addToCart(name, price) {
         cart.push({name, price, quantity:1});
     }
 
+    updateCart();
+}
+
+function removeItem(name){
+    cart = cart.filter(p => p.name !== name);
     updateCart();
 }
 
@@ -197,6 +279,11 @@ function submitOrder(){
     .catch(() => alert('Order failed'));
 }
 
+function logout(){
+    localStorage.clear();
+    window.location.href = '/';
+}
+
 function updateCart(){
     let cartItems = document.getElementById("cart-items");
     let total = 0;
@@ -215,6 +302,7 @@ function updateCart(){
                     <button class="qty-btn" onclick="changeQty('${item.name}', -1)">-</button>
                     ${item.quantity}
                     <button class="qty-btn" onclick="changeQty('${item.name}', 1)">+</button>
+                    <button onclick="removeItem('${item.name}')" style="margin-left:10px;background:red;color:white;border:none;border-radius:5px;padding:3px 8px;cursor:pointer">✕</button>
                 </div>
                 <div>
                     $${item.price * item.quantity}
