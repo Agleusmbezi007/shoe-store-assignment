@@ -411,6 +411,10 @@ let cart = [];
 
 fetch('/config').then(r => r.json()).then(cfg => {
     document.getElementById('waFloat').href = 'https://wa.me/' + cfg.sellerPhone;
+    if (cfg.userName) {
+        document.getElementById('user-name').value = cfg.userName;
+        localStorage.setItem('user_fullname', cfg.userName);
+    }
     if (!cfg.paymentReady) {
         const paySection = document.getElementById('payment-section');
         if (paySection) {
@@ -550,7 +554,7 @@ function submitOrder(){
 
 function logout(){
     localStorage.clear();
-    window.location.href = '/';
+    window.location.href = '/logout';
 }
 
 function payNow(){

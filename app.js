@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const session = require('express-session');
 const db = require('./db');
 const { notifyOrder } = require('./notify');
 const { createPayment, verifyPayment } = require('./payment');
@@ -14,6 +15,42 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'shoe-store-secret-key-change-me',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
+}));
+
+
+// AUTH MIDDLEWARE
+
+function requireAuth(req, res, next) {
+    if (req.session && req.session.userId) {
+        return next();
+    }
+    res.redirect('/?redirect=' + encodeURIComponent(req.originalUrl));
+}
+
+
+// LOGOUT ROUTE
+
+app.get('/logout', (req, res) => {
+    req.session.destroy(() => {
+        res.redirect('/');
+    });
+});
+
+
+// CHECK AUTH (for frontend SPA behavior)
+
+app.get('/check-auth', (req, res) => {
+    if (req.session && req.session.userId) {
+        return res.json({ loggedIn: true, name: req.session.userName, email: req.session.userEmail });
+    }
+    res.json({ loggedIn: false });
+});
+
 
 // CONFIG ENDPOINT
 
@@ -25,7 +62,9 @@ app.get('/config', (req, res) => {
     const ready = ak && as && mi && !ak.includes('xxxxx');
     res.json({
         sellerPhone: process.env.SELLER_PHONE || '255766847187',
-        paymentReady: ready
+        paymentReady: ready,
+        loggedIn: !!(req.session && req.session.userId),
+        userName: req.session?.userName || ''
     });
 });
 
@@ -35,7 +74,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'my_form.html'));
 });
 
-app.get('/shop', (req, res) => {
+app.get('/shop', requireAuth, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
@@ -119,6 +158,10 @@ app.post('/login', (req, res) => {
 
         if (result.length > 0) {
             const user = result[0];
+            req.session.userId = user.id;
+            req.session.userName = user.fullname;
+            req.session.userEmail = user.email;
+            const redirect = req.query.redirect || '/shop';
             return res.redirect(`/shop?fullname=${encodeURIComponent(user.fullname)}&email=${encodeURIComponent(user.email)}`);
         } else {
             return res.send('❌ Invalid email or password');
