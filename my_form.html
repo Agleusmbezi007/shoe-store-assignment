@@ -158,31 +158,31 @@ body{
 <!-- REGISTER -->
 <div class="tab-pane fade" id="register">
 
-<form action="/register" method="POST" autocomplete="new-password">
+<form id="registerForm" autocomplete="new-password">
 
 <div class="mb-3">
 <label class="form-label">Full Name</label>
-<input type="text" class="form-control" name="r1" data-name="fullname" placeholder="Your full name" readonly onfocus="this.removeAttribute('readonly')" required>
+<input type="text" class="form-control" name="fullname" placeholder="Your full name" readonly onfocus="this.removeAttribute('readonly')" required>
 </div>
 
 <div class="mb-3">
 <label class="form-label">Phone Number</label>
-<input type="tel" class="form-control" name="r2" data-name="phone" placeholder="e.g 07XXXXXXXX" readonly onfocus="this.removeAttribute('readonly')" required>
+<input type="tel" class="form-control" name="phone" placeholder="e.g 07XXXXXXXX" readonly onfocus="this.removeAttribute('readonly')" required>
 </div>
 
 <div class="mb-3">
 <label class="form-label">Email</label>
-<input type="email" class="form-control" name="r3" data-name="email" placeholder="Enter email" readonly onfocus="this.removeAttribute('readonly')" required>
+<input type="email" class="form-control" name="email" placeholder="Enter email" readonly onfocus="this.removeAttribute('readonly')" required>
 </div>
 
 <div class="mb-2">
 <label class="form-label">Password</label>
-<input type="text" id="regPass" class="form-control" name="r4" data-name="password" placeholder="Create password" readonly onfocus="this.removeAttribute('readonly')" data-pass="1" required>
+<input type="text" id="regPass" class="form-control" name="password" placeholder="Create password" readonly onfocus="this.removeAttribute('readonly')" data-pass="1" required>
 </div>
 
 <span class="toggle" onclick="toggle('regPass')">Show / Hide Password</span>
 
-<button class="btn btn-success w-100 mt-3">Create Account</button>
+<button type="submit" class="btn btn-success w-100 mt-3">Create Account</button>
 
 </form>
 
@@ -190,6 +190,15 @@ body{
 
 </div>
 
+</div>
+
+<!-- MODAL POPUP -->
+<div id="msgModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:3000;">
+    <div style="background:white;padding:30px;border-radius:12px;text-align:center;max-width:380px;box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+        <h3 id="msgTitle" style="margin:0 0 10px;"></h3>
+        <p id="msgText" style="margin:0 0 20px;color:#555;"></p>
+        <button id="msgBtn" onclick="closeMsgModal()" style="background:#111;color:white;padding:10px 24px;border:none;border-radius:8px;cursor:pointer;">OK</button>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -213,6 +222,50 @@ function freezeForm(tab){
     tab.querySelectorAll('input').forEach(muteField);
 }
 
+function showMsg(title, text, isSuccess){
+    document.getElementById('msgTitle').textContent = title;
+    document.getElementById('msgText').textContent = text;
+    document.getElementById('msgTitle').style.color = isSuccess ? 'green' : 'red';
+    document.getElementById('msgModal').style.display = 'flex';
+}
+
+function closeMsgModal(){
+    document.getElementById('msgModal').style.display = 'none';
+}
+
+document.getElementById('registerForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var form = this;
+    var data = {};
+    form.querySelectorAll('input').forEach(function(el){
+        data[el.name] = el.value;
+    });
+    fetch('/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(resp){
+        if(resp.success){
+            showMsg('✅ Success', resp.message, true);
+            document.getElementById('msgBtn').onclick = function(){
+                closeMsgModal();
+                var loginTab = document.querySelector('[data-bs-target="#login"]');
+                if(loginTab) loginTab.click();
+                form.reset();
+            };
+        } else {
+            showMsg('❌ Error', resp.message, false);
+            document.getElementById('msgBtn').onclick = closeMsgModal;
+        }
+    })
+    .catch(function(){
+        showMsg('❌ Error', 'Registration failed. Try again.', false);
+        document.getElementById('msgBtn').onclick = closeMsgModal;
+    });
+});
+
 document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function(btn){
     btn.addEventListener('shown.bs.tab', function(e){
         var pane = document.querySelector(e.target.dataset.bsTarget);
@@ -221,11 +274,13 @@ document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function(btn){
 });
 
 document.querySelectorAll('form').forEach(function(f){
-    f.addEventListener('submit',function(){
-        this.querySelectorAll('[data-name]').forEach(function(el){
-            el.name = el.dataset.name;
+    if(f.id !== 'registerForm'){
+        f.addEventListener('submit',function(){
+            this.querySelectorAll('[data-name]').forEach(function(el){
+                el.name = el.dataset.name;
+            });
         });
-    });
+    }
 });
 
 freezeForm(document.getElementById('login'));

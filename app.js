@@ -91,26 +91,23 @@ app.post('/register', (req, res) => {
 
     const { fullname, phone, email, password } = req.body;
 
-    // VALIDATION
     if (!fullname || !phone || !email || !password) {
-        return res.send('❌ All fields are required');
+        return res.json({ success: false, message: 'All fields are required' });
     }
 
-    // CHECK IF EMAIL EXISTS
     const checkSql = 'SELECT * FROM users WHERE email = ?';
 
     db.query(checkSql, [email], (checkErr, checkResult) => {
 
         if (checkErr) {
             console.log(checkErr);
-            return res.send('❌ Database error');
+            return res.json({ success: false, message: 'Database error' });
         }
 
         if (checkResult.length > 0) {
-            return res.send('❌ Registration failed');
+            return res.json({ success: false, message: 'Email already registered. Please login.' });
         }
 
-        // INSERT USER
         const insertSql = `
             INSERT INTO users(fullname, phone, email, password)
             VALUES (?, ?, ?, ?)
@@ -123,12 +120,12 @@ app.post('/register', (req, res) => {
 
                 if (err) {
                     console.log(err);
-                    return res.send('❌ Registration failed');
+                    return res.json({ success: false, message: 'Registration failed' });
                 }
 
                 console.log(result);
 
-                return res.send('✅ Registration successful');
+                return res.json({ success: true, message: 'Registration successful! You can now login.' });
 
             }
         );
