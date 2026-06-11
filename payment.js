@@ -6,12 +6,13 @@ const FLW_SECRET_KEY = process.env.FLW_SECRET_KEY;
 const FLW_WEBHOOK_SECRET = process.env.FLW_WEBHOOK_SECRET;
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
-const configured = FLW_PUBLIC_KEY && FLW_SECRET_KEY && !FLW_PUBLIC_KEY.includes('xxxxx');
+const keyValid = FLW_PUBLIC_KEY && FLW_SECRET_KEY && FLW_PUBLIC_KEY.startsWith('FLWPUBK-') && FLW_SECRET_KEY.startsWith('FLWSECK-') && !FLW_PUBLIC_KEY.includes('xxxxx') && !FLW_SECRET_KEY.includes('xxxxx');
 
-if (configured) {
-  console.log('Flutterwave configured');
+if (keyValid) {
+  console.log('Flutterwave configured with key: ' + FLW_PUBLIC_KEY.substring(0, 12) + '...');
 } else {
   console.warn('Flutterwave keys missing or still placeholders — payments disabled');
+  if (FLW_PUBLIC_KEY) console.log('FLW_PUBLIC_KEY starts with: ' + FLW_PUBLIC_KEY.substring(0, 12) + '...');
 }
 
 function generateTxRef() {
@@ -49,8 +50,8 @@ function flwRequest(path, method, body) {
 }
 
 async function createPayment(userName, email, phone, amount, items) {
-  if (!configured) {
-    return { error: 'Payment not configured. Set FLW keys in env.' };
+  if (!keyValid) {
+    return { error: 'Payment not configured. Get your Flutterwave API keys from https://dashboard.flutterwave.com and set FLW_PUBLIC_KEY / FLW_SECRET_KEY in Render env vars.' };
   }
 
   const txRef = generateTxRef();
