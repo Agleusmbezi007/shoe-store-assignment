@@ -102,6 +102,11 @@ header {
         padding: 14px !important;
         font-size: 15px !important;
     }
+
+    #pay-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
 }
 
 .product {
@@ -555,8 +560,11 @@ function payNow(){
         document.getElementById('payment-status').innerHTML = '<span style="color:red;">No pending payment. Please submit your order first.</span>';
         return;
     }
-    document.getElementById('payment-status').innerHTML = '<span style="color:#555;">Processing payment...</span>';
-    document.getElementById('pay-btn').disabled = true;
+    const btn = document.getElementById('pay-btn');
+    const status = document.getElementById('payment-status');
+    btn.disabled = true;
+    btn.textContent = '⏳ Processing...';
+    status.innerHTML = '<span style="color:#555;">Connecting to payment gateway...</span>';
 
     fetch('/create-payment', {
         method: 'POST',
@@ -572,15 +580,18 @@ function payNow(){
     .then(r => r.json())
     .then(data => {
         if (data.success && data.link) {
+            status.innerHTML = '<span style="color:green;">✅ Redirecting to payment page...</span>';
             window.location.href = data.link;
         } else {
-            document.getElementById('payment-status').innerHTML = '<span style="color:red;">❌ ' + (data.message || 'Payment failed') + '</span>';
-            document.getElementById('pay-btn').disabled = false;
+            status.innerHTML = '<span style="color:red;">❌ ' + (data.message || 'Payment failed') + '</span>';
+            btn.disabled = false;
+            btn.textContent = 'Pay Now';
         }
     })
     .catch(() => {
-        document.getElementById('payment-status').innerHTML = '<span style="color:red;">❌ Payment request failed</span>';
-        document.getElementById('pay-btn').disabled = false;
+        status.innerHTML = '<span style="color:red;">❌ Payment request failed. Check your connection and try again.</span>';
+        btn.disabled = false;
+        btn.textContent = 'Pay Now';
     });
 }
 

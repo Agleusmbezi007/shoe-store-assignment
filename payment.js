@@ -30,6 +30,7 @@ function flwRequest(path, method, body) {
       hostname: 'api.flutterwave.com',
       path: '/v3' + path,
       method,
+      timeout: 20000,
       headers: {
         'Authorization': 'Bearer ' + FLW_SECRET_KEY,
         'Content-Type': 'application/json',
@@ -48,6 +49,7 @@ function flwRequest(path, method, body) {
       });
     });
     req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('Flutterwave API timeout')); });
     req.write(data);
     req.end();
   });
