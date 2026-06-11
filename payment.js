@@ -1,10 +1,10 @@
 const https = require('https');
 const crypto = require('crypto');
 
-const FLW_PUBLIC_KEY = process.env.FLW_PUBLIC_KEY;
-const FLW_SECRET_KEY = process.env.FLW_SECRET_KEY;
-const FLW_WEBHOOK_SECRET = process.env.FLW_WEBHOOK_SECRET;
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const FLW_PUBLIC_KEY = (process.env.FLW_PUBLIC_KEY || '').trim();
+const FLW_SECRET_KEY = (process.env.FLW_SECRET_KEY || '').trim();
+const FLW_WEBHOOK_SECRET = (process.env.FLW_WEBHOOK_SECRET || '').trim();
+const BASE_URL = (process.env.BASE_URL || 'http://localhost:3000').trim();
 
 const keyValid = FLW_PUBLIC_KEY && FLW_SECRET_KEY && FLW_PUBLIC_KEY.startsWith('FLWPUBK-') && FLW_SECRET_KEY.startsWith('FLWSECK-') && !FLW_PUBLIC_KEY.includes('xxxxx') && !FLW_SECRET_KEY.includes('xxxxx');
 

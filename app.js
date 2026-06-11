@@ -15,14 +15,34 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 
+// DEBUG — remove after fixing
+
+app.get('/debug-env', (req, res) => {
+    const pk = (process.env.FLW_PUBLIC_KEY || '').trim();
+    const sk = (process.env.FLW_SECRET_KEY || '').trim();
+    res.json({
+        flw_public_prefix: pk.substring(0, 15) + '...',
+        flw_secret_prefix: sk.substring(0, 15) + '...',
+        flw_public_length: pk.length,
+        flw_secret_length: sk.length,
+        starts_with_flwpubk: pk.startsWith('FLWPUBK-'),
+        starts_with_flwseck: sk.startsWith('FLWSECK-'),
+        contains_xxxxx: pk.includes('xxxxx') || sk.includes('xxxxx'),
+        seller_phone: process.env.SELLER_PHONE || '(not set)',
+        base_url: process.env.BASE_URL || '(not set)'
+    });
+});
+
 // CONFIG ENDPOINT (so frontend uses same SELLER_PHONE as backend)
 
 app.get('/config', (req, res) => {
-    const flwKey = process.env.FLW_PUBLIC_KEY && !process.env.FLW_PUBLIC_KEY.includes('xxxxx') ? process.env.FLW_PUBLIC_KEY : null;
+    const pk = (process.env.FLW_PUBLIC_KEY || '').trim();
+    const sk = (process.env.FLW_SECRET_KEY || '').trim();
+    const ready = pk.startsWith('FLWPUBK-') && sk.startsWith('FLWSECK-') && !pk.includes('xxxxx') && !sk.includes('xxxxx');
     res.json({
         sellerPhone: process.env.SELLER_PHONE || '255766847187',
-        flutterwaveKey: flwKey,
-        flutterwaveReady: !!flwKey
+        flutterwaveKey: ready ? pk : null,
+        flutterwaveReady: ready
     });
 });
 
