@@ -14,6 +14,12 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 
+// CONFIG ENDPOINT (so frontend uses same SELLER_PHONE as backend)
+
+app.get('/config', (req, res) => {
+    res.json({ sellerPhone: process.env.SELLER_PHONE || '255766847187' });
+});
+
 // SERVE HTML FILES
 
 app.get('/', (req, res) => {
