@@ -1,4 +1,4 @@
-const Flutterwave = require('flutterwave-node-v3');
+const https = require('https');
 const crypto = require('crypto');
 
 const FLW_PUBLIC_KEY = process.env.FLW_PUBLIC_KEY;
@@ -6,11 +6,10 @@ const FLW_SECRET_KEY = process.env.FLW_SECRET_KEY;
 const FLW_WEBHOOK_SECRET = process.env.FLW_WEBHOOK_SECRET;
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
-let flw = null;
+const configured = FLW_PUBLIC_KEY && FLW_SECRET_KEY && !FLW_PUBLIC_KEY.includes('xxxxx');
 
-if (FLW_PUBLIC_KEY && FLW_SECRET_KEY && !FLW_PUBLIC_KEY.includes('xxxxx')) {
-  flw = new Flutterwave(FLW_PUBLIC_KEY, FLW_SECRET_KEY);
-  console.log('Flutterwave client initialized');
+if (configured) {
+  console.log('Flutterwave configured');
 } else {
   console.warn('Flutterwave keys missing or still placeholders — payments disabled');
 }
@@ -19,14 +18,44 @@ function generateTxRef() {
   return 'SHOE-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex');
 }
 
+function flwRequest(path, method, body) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const options = {
+      hostname: 'api.flutterwave.com',
+      path: '/v3' + path,
+      method,
+      headers: {
+        'Authorization': 'Bearer ' + FLW_SECRET_KEY,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data)
+      }
+    };
+    const req = https.request(options, res => {
+      let chunks = [];
+      res.on('data', d => chunks.push(d));
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(Buffer.concat(chunks).toString()));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
 async function createPayment(userName, email, phone, amount, items) {
-  if (!flw) {
-    return { error: 'Payment not configured. Set FLW_PUBLIC_KEY and FLW_SECRET_KEY in env.' };
+  if (!configured) {
+    return { error: 'Payment not configured. Set FLW keys in env.' };
   }
 
   const txRef = generateTxRef();
 
-  const details = {
+  const payload = {
     tx_ref: txRef,
     amount: amount.toString(),
     currency: 'TZS',
@@ -36,10 +65,6 @@ async function createPayment(userName, email, phone, amount, items) {
       phone: phone || '',
       name: userName
     },
-    meta: {
-      user_name: userName,
-      items: JSON.stringify(items)
-    },
     customizations: {
       title: 'Shoe Store',
       description: 'Payment for ' + items.length + ' item(s)'
@@ -47,12 +72,12 @@ async function createPayment(userName, email, phone, amount, items) {
   };
 
   try {
-    const response = await flw.Payment.create(details);
+    const response = await flwRequest('/payments', 'POST', payload);
     if (response.status === 'success' && response.data?.link) {
       return { txRef, link: response.data.link };
     } else {
       console.error('Flutterwave error:', response);
-      return { error: response.message || 'Payment creation failed' };
+      return { error: response.message || response.data?.message || 'Payment creation failed' };
     }
   } catch (err) {
     console.error('Flutterwave exception:', err);
@@ -61,11 +86,9 @@ async function createPayment(userName, email, phone, amount, items) {
 }
 
 async function verifyPayment(transactionId) {
-  if (!flw) return { error: 'Flutterwave not configured' };
-
+  if (!configured) return { error: 'Flutterwave not configured' };
   try {
-    const response = await flw.Transaction.verify({ id: transactionId });
-    return response;
+    return await flwRequest('/transactions/' + transactionId + '/verify', 'GET', {});
   } catch (err) {
     console.error('Verification failed:', err);
     return { error: err.message };
