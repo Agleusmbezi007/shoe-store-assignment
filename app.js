@@ -21,14 +21,13 @@ app.get('/debug-env', (req, res) => {
     const pk = (process.env.FLW_PUBLIC_KEY || '').trim();
     const sk = (process.env.FLW_SECRET_KEY || '').trim();
     res.json({
-        raw_first_chars: pk.substring(0, 5).split('').map(c => c.charCodeAt(0)),
-        flw_public_prefix: pk.substring(0, 20),
-        flw_secret_prefix: sk.substring(0, 20),
+        chars_0_to_10: pk.substring(0, 10).split('').map((c, i) => ({ i, c, code: c.charCodeAt(0) })),
+        flw_public_raw: JSON.stringify(pk.substring(0, 25)),
+        flw_secret_raw: JSON.stringify(sk.substring(0, 25)),
         flw_public_length: pk.length,
         flw_secret_length: sk.length,
         starts_with_flwpubk: pk.startsWith('FLWPUBK-'),
         starts_with_flwseck: sk.startsWith('FLWSECK-'),
-        contains_xxxxx: pk.includes('xxxxx') || sk.includes('xxxxx'),
         seller_phone: process.env.SELLER_PHONE || '(not set)',
         base_url: process.env.BASE_URL || '(not set)'
     });
@@ -39,7 +38,7 @@ app.get('/debug-env', (req, res) => {
 app.get('/config', (req, res) => {
     const pk = (process.env.FLW_PUBLIC_KEY || '').trim();
     const sk = (process.env.FLW_SECRET_KEY || '').trim();
-    const ready = pk.startsWith('FLWPUBK-') && sk.startsWith('FLWSECK-') && !pk.includes('xxxxx') && !sk.includes('xxxxx');
+    const ready = pk.length > 20 && sk.length > 20 && !pk.includes('xxxxx') && !sk.includes('xxxxx');
     res.json({
         sellerPhone: process.env.SELLER_PHONE || '255766847187',
         flutterwaveKey: ready ? pk : null,

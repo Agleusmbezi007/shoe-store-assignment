@@ -6,7 +6,7 @@ const FLW_SECRET_KEY = (process.env.FLW_SECRET_KEY || '').trim();
 const FLW_WEBHOOK_SECRET = (process.env.FLW_WEBHOOK_SECRET || '').trim();
 const BASE_URL = (process.env.BASE_URL || 'http://localhost:3000').trim();
 
-const keyValid = FLW_PUBLIC_KEY && FLW_SECRET_KEY && FLW_PUBLIC_KEY.startsWith('FLWPUBK-') && FLW_SECRET_KEY.startsWith('FLWSECK-') && !FLW_PUBLIC_KEY.includes('xxxxx') && !FLW_SECRET_KEY.includes('xxxxx');
+const keyValid = FLW_PUBLIC_KEY && FLW_SECRET_KEY && FLW_PUBLIC_KEY.length > 20 && FLW_SECRET_KEY.length > 20 && !FLW_PUBLIC_KEY.includes('xxxxx') && !FLW_SECRET_KEY.includes('xxxxx');
 
 if (keyValid) {
   console.log('Flutterwave configured with key: ' + FLW_PUBLIC_KEY.substring(0, 12) + '...');
