@@ -78,6 +78,10 @@ app.get('/shop', requireAuth, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/admin', requireAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
 
 // REGISTER ROUTE
 
@@ -198,6 +202,15 @@ app.post('/submit-order', (req, res) => {
 
         console.log('Order saved:', result);
 
+        const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
+        const txRef = 'MAN-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
+
+        db.query(
+            'INSERT INTO transactions (tx_ref, user_name, email, phone, amount, items, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [txRef, user_name, email, '', total, JSON.stringify(items), 'pending_manual'],
+            (err) => { if (err) console.error('Failed to save transaction:', err); }
+        );
+
         let waLinks = { sellerLink: null, customerLink: null };
 
         if (email) {
@@ -210,7 +223,7 @@ app.post('/submit-order', (req, res) => {
             });
         }
 
-        return res.json({ success: true, message: 'Order placed successfully!', waLinks });
+        return res.json({ success: true, message: 'Order placed successfully!', waLinks, txRef });
 
     });
 
@@ -279,6 +292,32 @@ app.get('/payment-status', (req, res) => {
         return res.json({ status: rows[0].status });
     });
 
+});
+
+
+// CONFIRM MANUAL PAYMENT (seller marks M-Pesa as paid)
+
+app.post('/confirm-payment', requireAuth, (req, res) => {
+    const { txRef } = req.body;
+    if (!txRef) return res.json({ success: false, message: 'Missing txRef' });
+    db.query('UPDATE transactions SET status = ? WHERE tx_ref = ? AND status = ?',
+        ['confirmed_manual', txRef, 'pending_manual'],
+        (err, result) => {
+            if (err) return res.json({ success: false, message: 'Database error' });
+            if (result.affectedRows === 0) return res.json({ success: false, message: 'Transaction not found or already confirmed' });
+            return res.json({ success: true, message: 'Payment confirmed!' });
+        }
+    );
+});
+
+
+// LIST PENDING PAYMENTS (seller view)
+
+app.get('/pending-payments', requireAuth, (req, res) => {
+    db.query('SELECT * FROM transactions ORDER BY created_at DESC LIMIT 50', (err, rows) => {
+        if (err) return res.json([]);
+        res.json(rows);
+    });
 });
 
 

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seller Dashboard</title>
+<style>
+body { font-family: Arial; background: #f4f6f9; margin: 0; padding: 20px; }
+h1 { margin: 0 0 20px; }
+table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+th { background: #111; color: white; }
+.pending { color: orange; font-weight: bold; }
+.confirmed { color: green; font-weight: bold; }
+.confirm-btn { background: green; color: white; border: none; padding: 6px 14px; border-radius: 5px; cursor: pointer; }
+.confirm-btn:hover { opacity: 0.8; }
+.back { display: inline-block; margin-bottom: 15px; color: #555; text-decoration: none; }
+</style>
+</head>
+<body>
+<a href="/shop" class="back">← Back to Shop</a>
+<h1>📋 Pending Payments</h1>
+<table>
+<thead><tr><th>Date</th><th>Customer</th><th>Email</th><th>Amount</th><th>Items</th><th>Status</th><th>Action</th></tr></thead>
+<tbody id="payments-body"><tr><td colspan="7" style="text-align:center;">Loading...</td></tr></tbody>
+</table>
+<script>
+function loadPayments() {
+    fetch('/pending-payments').then(r => r.json()).then(data => {
+        const tbody = document.getElementById('payments-body');
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No payments yet</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.map(p => `
+            <tr>
+                <td>${new Date(p.created_at).toLocaleDateString()}</td>
+                <td>${p.user_name}</td>
+                <td>${p.email}</td>
+                <td>$${p.amount}</td>
+                <td>${(JSON.parse(p.items || '[]')).map(i => i.name).join(', ')}</td>
+                <td class="${p.status === 'confirmed_manual' ? 'confirmed' : 'pending'}">${p.status === 'confirmed_manual' ? '✅ Confirmed' : p.status === 'pending_manual' ? '⏳ Pending (M-Pesa)' : '✅ Paid'}</td>
+                <td>${p.status === 'pending_manual' ? `<button class="confirm-btn" onclick="confirmPayment('${p.tx_ref}')">Confirm Paid</button>` : '-'}</td>
+            </tr>
+        `).join('');
+    });
+}
+
+function confirmPayment(txRef) {
+    if (!confirm('Mark this payment as confirmed?')) return;
+    fetch('/confirm-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txRef })
+    }).then(r => r.json()).then(data => {
+        alert(data.message);
+        if (data.success) loadPayments();
+    });
+}
+
+loadPayments();
+</script>
+</body>
+</html>

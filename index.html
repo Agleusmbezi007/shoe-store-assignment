@@ -268,7 +268,8 @@ button:hover {
     <h2>👟 Shoe Store</h2>
     <div>
         Cart: <span id="cart-count">0</span>
-        <button onclick="logout()" style="margin-left:15px;background:red;padding:6px 12px;border:none;color:white;border-radius:5px;cursor:pointer">Logout</button>
+        <a href="/admin" style="margin-left:10px;color:#aaa;text-decoration:none;font-size:13px;">Admin</a>
+        <button onclick="logout()" style="margin-left:10px;background:red;padding:6px 12px;border:none;color:white;border-radius:5px;cursor:pointer">Logout</button>
     </div>
 </header>
 
@@ -541,7 +542,7 @@ function submitOrder(){
             document.getElementById('payment-total').textContent = total;
             document.getElementById('payment-section').style.display = 'block';
             document.getElementById('payment-status').innerHTML = '';
-            window.pendingPayment = { user_name, email, amount: total, items };
+            window.pendingPayment = { user_name, email, amount: total, items, txRef: data.txRef };
             if(data.waLinks?.customerLink){
                 showOrderConfirm(data.waLinks.customerLink);
             } else {
