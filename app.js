@@ -18,8 +18,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // DEBUG — remove after fixing
 
 app.get('/debug-env', (req, res) => {
-    const pk = (process.env.FLW_PUBLIC_KEY || '').trim();
-    const sk = (process.env.FLW_SECRET_KEY || '').trim();
+    const clean = v => (v || '').trim().replace(/^"+|"+$/g, '');
+    const pk = clean(process.env.FLW_PUBLIC_KEY);
+    const sk = clean(process.env.FLW_SECRET_KEY);
     res.json({
         chars_0_to_10: pk.substring(0, 10).split('').map((c, i) => ({ i, c, code: c.charCodeAt(0) })),
         flw_public_raw: JSON.stringify(pk.substring(0, 25)),
@@ -36,9 +37,10 @@ app.get('/debug-env', (req, res) => {
 // CONFIG ENDPOINT (so frontend uses same SELLER_PHONE as backend)
 
 app.get('/config', (req, res) => {
-    const pk = (process.env.FLW_PUBLIC_KEY || '').trim();
-    const sk = (process.env.FLW_SECRET_KEY || '').trim();
-    const ready = pk.length > 20 && sk.length > 20 && !pk.includes('xxxxx') && !sk.includes('xxxxx');
+    const clean = v => (v || '').trim().replace(/^"+|"+$/g, '');
+    const pk = clean(process.env.FLW_PUBLIC_KEY);
+    const sk = clean(process.env.FLW_SECRET_KEY);
+    const ready = pk && sk && pk.length > 20 && sk.length > 20 && !pk.includes('xxxxx') && !sk.includes('xxxxx');
     res.json({
         sellerPhone: process.env.SELLER_PHONE || '255766847187',
         flutterwaveKey: ready ? pk : null,
