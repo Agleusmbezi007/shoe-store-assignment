@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const db = require('./db');
+const { notifyOrder } = require('./notify');
 
 const app = express();
 
@@ -117,7 +118,7 @@ app.post('/login', (req, res) => {
 
 app.post('/submit-order', (req, res) => {
 
-    const { user_name, items } = req.body;
+    const { user_name, email, items } = req.body;
 
     if (!user_name) {
         return res.json({ success: false, message: 'Please enter your name' });
@@ -138,6 +139,17 @@ app.post('/submit-order', (req, res) => {
         }
 
         console.log('Order saved:', result);
+
+        if (email) {
+            db.query('SELECT phone FROM users WHERE email = ?', [email], (err2, rows) => {
+                if (!err2 && rows.length > 0) {
+                    notifyOrder(user_name, rows[0].phone, items);
+                } else {
+                    console.warn('Could not look up phone for', email);
+                }
+            });
+        }
+
         return res.json({ success: true, message: 'Order placed successfully!' });
 
     });

@@ -264,10 +264,12 @@ function submitOrder(){
         return;
     }
 
+    const email = localStorage.getItem('user_email') || '';
+
     fetch('/submit-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_name, items: cart })
+        body: JSON.stringify({ user_name, email, items: cart })
     })
     .then(res => res.json())
     .then(data => {
