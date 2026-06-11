@@ -118,7 +118,7 @@ function seedProducts(conn) {
 
 function seedAdmin(conn) {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@shoestore.com';
-    const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminPass = process.env.ADMIN_PASSWORD || 'Admin@123';
     conn.query('SELECT id FROM users WHERE email = ?', [adminEmail], (err, result) => {
         if (err || result.length > 0) return;
         conn.query(
