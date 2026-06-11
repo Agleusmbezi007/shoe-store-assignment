@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const db = require('./db');
 const { notifyOrder } = require('./notify');
-const { createPayment, verifyPayment, verifyWebhookSignature, generateTxRef } = require('./payment');
+const { createPayment, verifyPayment } = require('./payment');
 
 const app = express();
 
@@ -15,36 +15,17 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-// DEBUG — remove after fixing
-
-app.get('/debug-env', (req, res) => {
-    const clean = v => (v || '').trim().replace(/^"+|"+$/g, '');
-    const pk = clean(process.env.FLW_PUBLIC_KEY);
-    const sk = clean(process.env.FLW_SECRET_KEY);
-    res.json({
-        chars_0_to_10: pk.substring(0, 10).split('').map((c, i) => ({ i, c, code: c.charCodeAt(0) })),
-        flw_public_raw: JSON.stringify(pk.substring(0, 25)),
-        flw_secret_raw: JSON.stringify(sk.substring(0, 25)),
-        flw_public_length: pk.length,
-        flw_secret_length: sk.length,
-        starts_with_flwpubk: pk.startsWith('FLWPUBK-'),
-        starts_with_flwseck: sk.startsWith('FLWSECK-'),
-        seller_phone: process.env.SELLER_PHONE || '(not set)',
-        base_url: process.env.BASE_URL || '(not set)'
-    });
-});
-
-// CONFIG ENDPOINT (so frontend uses same SELLER_PHONE as backend)
+// CONFIG ENDPOINT
 
 app.get('/config', (req, res) => {
-    const clean = v => (v || '').trim().replace(/^"+|"+$/g, '');
-    const pk = clean(process.env.FLW_PUBLIC_KEY);
-    const sk = clean(process.env.FLW_SECRET_KEY);
-    const ready = pk && sk && pk.length > 20 && sk.length > 20 && !pk.includes('xxxxx') && !sk.includes('xxxxx');
+    const clean = v => (v || '').replace(/^"+|"+$/g, '').trim();
+    const ak = clean(process.env.SELCOM_API_KEY);
+    const as = clean(process.env.SELCOM_API_SECRET);
+    const mi = clean(process.env.SELCOM_MERCHANT_ID);
+    const ready = ak && as && mi && !ak.includes('xxxxx');
     res.json({
         sellerPhone: process.env.SELLER_PHONE || '255766847187',
-        flutterwaveKey: ready ? pk : null,
-        flutterwaveReady: ready
+        paymentReady: ready
     });
 });
 
@@ -222,54 +203,20 @@ app.post('/create-payment', (req, res) => {
 });
 
 
-app.get('/payment-callback', (req, res) => {
+app.post('/selcom-callback', (req, res) => {
 
-    const { transaction_id, status, tx_ref } = req.query;
+    const { order_id, status, transaction_id } = req.body || {};
 
-    if (status === 'successful' || status === 'completed') {
-        verifyPayment(transaction_id).then(verifyRes => {
-            if (verifyRes.status === 'success' && verifyRes.data?.status === 'successful') {
-                db.query('UPDATE transactions SET flw_id = ?, status = ? WHERE tx_ref = ?',
-                    [transaction_id, 'completed', tx_ref], (err) => {
-                        if (err) console.error('Update failed:', err);
-                    }
-                );
-                return res.redirect('/shop?payment=success');
-            } else {
-                db.query('UPDATE transactions SET flw_id = ?, status = ? WHERE tx_ref = ?',
-                    [transaction_id, 'failed', tx_ref], (err) => {
-                        if (err) console.error('Update failed:', err);
-                    }
-                );
-                return res.redirect('/shop?payment=failed');
-            }
-        });
-    } else {
-        db.query('UPDATE transactions SET status = ? WHERE tx_ref = ?',
-            ['cancelled', tx_ref], (err) => {
-                if (err) console.error('Update failed:', err);
+    if (order_id && (status === 'success' || status === 'completed')) {
+        db.query('UPDATE transactions SET flw_id = ?, status = ? WHERE tx_ref = ?',
+            [transaction_id || '', 'completed', order_id], (err) => {
+                if (err) console.error('Callback update failed:', err);
             }
         );
-        return res.redirect('/shop?payment=cancelled');
-    }
-
-});
-
-
-app.post('/webhook', (req, res) => {
-
-    const signature = req.headers['verif-hash'];
-
-    if (!verifyWebhookSignature(req.body, signature)) {
-        return res.status(401).json({ status: 'error', message: 'Invalid signature' });
-    }
-
-    const { txRef, status, id } = req.body?.data || {};
-
-    if (txRef && status === 'successful') {
-        db.query('UPDATE transactions SET flw_id = ?, status = ? WHERE tx_ref = ?',
-            [id, 'completed', txRef], (err) => {
-                if (err) console.error('Webhook update failed:', err);
+    } else if (order_id) {
+        db.query('UPDATE transactions SET status = ? WHERE tx_ref = ?',
+            ['failed', order_id], (err) => {
+                if (err) console.error('Callback update failed:', err);
             }
         );
     }

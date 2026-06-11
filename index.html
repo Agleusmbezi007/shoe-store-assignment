@@ -377,7 +377,7 @@ button:hover {
     <button onclick="clearCart()">Clear Cart</button>
     <button onclick="submitOrder()" style="background: green;">Submit Order</button>
     <div id="payment-section" style="display:none;margin-top:15px;padding-top:15px;border-top:2px solid #eee;">
-        <h4 style="margin:0 0 5px;">💳 Payment</h4>
+        <h4 style="margin:0 0 5px;">💳 Payment via M-Pesa</h4>
         <p style="margin:0 0 10px;font-size:14px;color:#555;">Complete payment to confirm your order</p>
         <p style="font-size:18px;font-weight:bold;margin:0 0 10px;">Total: $<span id="payment-total">0</span></p>
         <button id="pay-btn" onclick="payNow()" style="background:#25D366;padding:12px 20px;font-size:16px;">Pay Now</button>
@@ -411,8 +411,7 @@ let cart = [];
 
 fetch('/config').then(r => r.json()).then(cfg => {
     document.getElementById('waFloat').href = 'https://wa.me/' + cfg.sellerPhone;
-    window.flwReady = cfg.flutterwaveReady;
-    if (!cfg.flutterwaveReady) {
+    if (!cfg.paymentReady) {
         const paySection = document.getElementById('payment-section');
         if (paySection) {
             paySection.querySelector('p:first-of-type').textContent = '⚠ Payment not configured yet. Contact seller to complete payment.';
