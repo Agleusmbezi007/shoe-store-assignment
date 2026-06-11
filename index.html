@@ -273,100 +273,7 @@ button:hover {
     </div>
 </header>
 
-<div class="container">
-
-    <div class="product">
-        <img src="images/pexels-styves-exantus-7162424-6412694.jpg" alt="">
-        <h3>Nike Air</h3>
-        <p>$50</p>
-        <button onclick="addToCart('Nike Air',50)">Add to Cart</button>
-    </div>
-
-    <div class="product">
-        <img src="images/pexels-marcio-carvalho-1334537412-28879459.jpg" alt="">
-        <h3>Adidas Runner</h3>
-        <p>$45</p>
-        <button onclick="addToCart('Adidas Runner',45)">Add to Cart</button>
-    </div>
-
-    <div class="product">
-        <img src="images/pexels-victor-filemon-lopez-sanchez-3289921-15036819.jpg" alt="">
-        <h3>Puma Classic</h3>
-        <p>$40</p>
-        <button onclick="addToCart('Puma Classic',40)">Add to Cart</button>
-    </div>
-
-    <div class="product">
-        <img src="images/yeezybustas-jordan-shoes-1777572_1920.jpg" alt="">
-        <h3>Yeezy Boost</h3>
-        <p>$60</p>
-        <button onclick="addToCart('Yeezy Boost',60)">Add to Cart</button>
-    </div>
-
-    <div class="product">
-        <img src="images/starkvisuals-sneakers-3714730_1920.jpg" alt="">
-        <h3>Stark Sneakers</h3>
-        <p>$48</p>
-        <button onclick="addToCart('Stark Sneakers',48)">Add to Cart</button>
-    </div>
-
-    <div class="product">
-        <img src="images/megashock-jordan-4657349_1920.jpg" alt="">
-        <h3>Mega Shock</h3>
-        <p>$55</p>
-        <button onclick="addToCart('Mega Shock',55)">Add to Cart</button>
-    </div>
-
-    <div class="product">
-        <img src="images/marzuk-sneakers-5578127_1920.jpg" alt="">
-        <h3>Marzuk Sneakers</h3>
-        <p>$42</p>
-        <button onclick="addToCart('Marzuk Sneakers',42)">Add to Cart</button>
-    </div>
-
-    <div class="product">
-        <img src="images/marzuk-nike-5644799.jpg" alt="">
-        <h3>Marzuk Nike</h3>
-        <p>$52</p>
-        <button onclick="addToCart('Marzuk Nike',52)">Add to Cart</button>
-    </div>
-
-    <div class="product">
-        <img src="images/lovechin-ai-generated-8644121.png" alt="">
-        <h3>Lovechin Special</h3>
-        <p>$38</p>
-        <button onclick="addToCart('Lovechin Special',38)">Add to Cart</button>
-    </div>
-
-    <div class="product">
-        <img src="images/grailify-nike-5226091_1920.jpg" alt="">
-        <h3>Grailify Nike</h3>
-        <p>$47</p>
-        <button onclick="addToCart('Grailify Nike',47)">Add to Cart</button>
-    </div>
-
-    <div class="product">
-        <img src="images/grailify-nike-5041718_1920.jpg" alt="">
-        <h3>Grailify Classic</h3>
-        <p>$44</p>
-        <button onclick="addToCart('Grailify Classic',44)">Add to Cart</button>
-    </div>
-
-    <div class="product">
-        <img src="images/deanmoth-tennis-7968714_1920.png" alt="">
-        <h3>Deanmoth Tennis</h3>
-        <p>$35</p>
-        <button onclick="addToCart('Deanmoth Tennis',35)">Add to Cart</button>
-    </div>
-
-    <div class="product">
-        <img src="images/alexas_fotos-baby-shoes-974715_1920.jpg" alt="">
-        <h3>Alexa Baby Shoes</h3>
-        <p>$25</p>
-        <button onclick="addToCart('Alexa Baby Shoes',25)">Add to Cart</button>
-    </div>
-
-</div>
+<div class="container" id="product-container"></div>
 
 <div class="cart-box">
     <h3>🛒 Cart</h3>
@@ -414,6 +321,7 @@ button:hover {
 
 <script>
 let cart = [];
+let products = [];
 
 fetch('/config').then(r => r.json()).then(cfg => {
     document.getElementById('waFloat').href = 'https://wa.me/' + cfg.sellerPhone;
@@ -429,12 +337,48 @@ fetch('/config').then(r => r.json()).then(cfg => {
     document.getElementById('waFloat').href = 'https://wa.me/255766847187';
 });
 
-document.querySelectorAll('.product img').forEach(img => {
-    img.style.cursor = 'pointer';
-    img.addEventListener('click', function() {
-        openLightbox(this.src);
+loadProducts();
+
+function loadProducts() {
+    fetch('/api/products').then(r => r.json()).then(data => {
+        products = data;
+        var container = document.getElementById('product-container');
+        container.innerHTML = '';
+        data.forEach(function(p) {
+            var div = document.createElement('div');
+            div.className = 'product';
+            var img = document.createElement('img');
+            img.src = p.image;
+            img.alt = p.name;
+            img.style.cursor = 'pointer';
+            img.addEventListener('click', function() { openLightbox(p.image); });
+            div.appendChild(img);
+            var h3 = document.createElement('h3');
+            h3.textContent = p.name;
+            div.appendChild(h3);
+            var priceP = document.createElement('p');
+            priceP.textContent = '$' + p.price;
+            div.appendChild(priceP);
+            if (p.sold) {
+                var soldBadge = document.createElement('span');
+                soldBadge.textContent = ' SOLD';
+                soldBadge.style.cssText = 'background:red;color:white;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:bold;';
+                div.appendChild(soldBadge);
+                var btn = document.createElement('button');
+                btn.textContent = 'Out of Stock';
+                btn.disabled = true;
+                btn.style.cssText = 'margin-top:10px;background:#aaa;color:white;padding:8px 12px;border:none;border-radius:5px;cursor:not-allowed;';
+                div.appendChild(btn);
+            } else {
+                var btn = document.createElement('button');
+                btn.textContent = 'Add to Cart';
+                btn.addEventListener('click', function() { addToCart(p.name, p.price); });
+                div.appendChild(btn);
+            }
+            container.appendChild(div);
+        });
     });
-});
+}
 
 function openLightbox(src) {
     document.getElementById('lightboxImg').src = src;

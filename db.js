@@ -65,14 +65,53 @@ connection.connect((err) => {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             )
+        `);
+
+        connection.query(`
+            CREATE TABLE IF NOT EXISTS products (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                price DECIMAL(10,2) NOT NULL,
+                image VARCHAR(500) NOT NULL,
+                sold BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
         `, (err) => {
             if (err) {
                 console.error('Failed to create tables:', err.message);
             } else {
                 console.log('Tables ready');
+                seedProducts(connection);
             }
         });
     });
 });
+
+function seedProducts(conn) {
+    const initial = [
+        ['Nike Air', 50, 'images/pexels-styves-exantus-7162424-6412694.jpg'],
+        ['Adidas Runner', 45, 'images/pexels-marcio-carvalho-1334537412-28879459.jpg'],
+        ['Puma Classic', 40, 'images/pexels-victor-filemon-lopez-sanchez-3289921-15036819.jpg'],
+        ['Yeezy Boost', 60, 'images/yeezybustas-jordan-shoes-1777572_1920.jpg'],
+        ['Stark Sneakers', 48, 'images/starkvisuals-sneakers-3714730_1920.jpg'],
+        ['Mega Shock', 55, 'images/megashock-jordan-4657349_1920.jpg'],
+        ['Marzuk Sneakers', 42, 'images/marzuk-sneakers-5578127_1920.jpg'],
+        ['Marzuk Nike', 52, 'images/marzuk-nike-5644799.jpg'],
+        ['Lovechin Special', 38, 'images/lovechin-ai-generated-8644121.png'],
+        ['Grailify Nike', 47, 'images/grailify-nike-5226091_1920.jpg'],
+        ['Grailify Classic', 44, 'images/grailify-nike-5041718_1920.jpg'],
+        ['Deanmoth Tennis', 35, 'images/deanmoth-tennis-7968714_1920.png'],
+        ['Alexa Baby Shoes', 25, 'images/alexas_fotos-baby-shoes-974715_1920.jpg']
+    ];
+
+    conn.query('SELECT COUNT(*) AS cnt FROM products', (err, result) => {
+        if (err || result[0].cnt > 0) return;
+        const sql = 'INSERT INTO products (name, price, image) VALUES ?';
+        conn.query(sql, [initial], (err2) => {
+            if (err2) console.error('Seed failed:', err2.message);
+            else console.log('Products seeded: ' + initial.length);
+        });
+    });
+}
 
 module.exports = connection;

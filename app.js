@@ -199,6 +199,12 @@ app.post('/submit-order', (req, res) => {
 
         console.log('Order saved:', result);
 
+        items.forEach(item => {
+            db.query('UPDATE products SET sold = TRUE WHERE name = ?', [item.name], (err) => {
+                if (err) console.error('Failed to mark product sold:', err);
+            });
+        });
+
         const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
         const txRef = 'MAN-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
 
@@ -289,6 +295,39 @@ app.get('/payment-status', (req, res) => {
         return res.json({ status: rows[0].status });
     });
 
+});
+
+
+// PRODUCTS API
+
+app.get('/api/products', (req, res) => {
+    db.query('SELECT * FROM products ORDER BY sold ASC, id ASC', (err, rows) => {
+        if (err) return res.json([]);
+        res.json(rows);
+    });
+});
+
+app.post('/api/products', requireAuth, (req, res) => {
+    const { name, price, image } = req.body;
+    if (!name || !price || !image) return res.json({ success: false, message: 'All fields required' });
+    db.query('INSERT INTO products (name, price, image) VALUES (?, ?, ?)', [name, price, image], (err, result) => {
+        if (err) return res.json({ success: false, message: err.message });
+        res.json({ success: true, id: result.insertId });
+    });
+});
+
+app.delete('/api/products/:id', requireAuth, (req, res) => {
+    db.query('DELETE FROM products WHERE id = ?', [req.params.id], (err) => {
+        if (err) return res.json({ success: false, message: err.message });
+        res.json({ success: true });
+    });
+});
+
+app.put('/api/products/:id/unsold', requireAuth, (req, res) => {
+    db.query('UPDATE products SET sold = FALSE WHERE id = ?', [req.params.id], (err) => {
+        if (err) return res.json({ success: false, message: err.message });
+        res.json({ success: true });
+    });
 });
 
 
