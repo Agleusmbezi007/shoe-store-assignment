@@ -219,6 +219,31 @@ button:hover {
     opacity: 0.9;
     color: white;
 }
+
+.lightbox {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    cursor: pointer;
+    padding: 20px;
+}
+
+.lightbox.show {
+    display: flex;
+}
+
+.lightbox img {
+    max-width: 90vw;
+    max-height: 85vh;
+    border-radius: 8px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    object-fit: contain;
+    cursor: default;
+}
 </style>
 </head>
 
@@ -348,6 +373,10 @@ button:hover {
     </div>
 </div>
 
+<div id="lightbox" class="lightbox" onclick="closeLightbox()">
+    <img id="lightboxImg" src="" alt="" onclick="event.stopPropagation()">
+</div>
+
 <a class="wa-float" id="waFloat" href="#" target="_blank" title="Chat on WhatsApp">
     <svg viewBox="0 0 32 32" fill="white" width="22" height="22">
         <path d="M16 0C7.2 0 0 7.2 0 16c0 3.1 0.9 6 2.4 8.5L0 32l7.8-2.3C10.3 31.2 13.1 32 16 32c8.8 0 16-7.2 16-16S24.8 0 16 0zm7.5 22.7c-0.3 0.8-1.5 1.5-2.5 1.7-0.7 0.1-1.6 0.3-4.8-1-2.5-1-4.4-3.3-4.5-3.5-0.1-0.1-1.1-1.4-1.1-2.7s0.7-2 1-2.3c0.2-0.2 0.5-0.4 0.7-0.4 0.2 0 0.4 0 0.5 0 0.2 0 0.4-0.1 0.6 0.4 0.2 0.5 0.7 1.8 0.8 1.9 0.1 0.1 0.1 0.3 0 0.5-0.1 0.2-0.2 0.3-0.4 0.5-0.2 0.2-0.3 0.3-0.2 0.5 0.3 0.5 1.1 1.8 2 2.5 1.4 1.1 2.5 1.4 2.9 1.5 0.3 0.1 0.6 0 0.8-0.2 0.2-0.2 0.8-0.9 1-1.2 0.2-0.3 0.4-0.3 0.7-0.2 0.3 0.1 1.7 0.8 2 1 0.3 0.1 0.5 0.2 0.6 0.3 0.1 0.2 0.1 0.9-0.2 1.7z"/>
@@ -362,6 +391,26 @@ fetch('/config').then(r => r.json()).then(cfg => {
     document.getElementById('waFloat').href = 'https://wa.me/' + cfg.sellerPhone;
 }).catch(() => {
     document.getElementById('waFloat').href = 'https://wa.me/255766847187';
+});
+
+document.querySelectorAll('.product img').forEach(img => {
+    img.style.cursor = 'pointer';
+    img.addEventListener('click', function() {
+        openLightbox(this.src);
+    });
+});
+
+function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightbox').classList.add('show');
+}
+
+function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('show');
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeLightbox();
 });
 
 (function() {
