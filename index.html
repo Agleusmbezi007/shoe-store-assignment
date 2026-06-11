@@ -80,6 +80,78 @@ button:hover {
 .cart-item button {
     margin-top: 0;
 }
+
+.wa-float {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #25D366;
+    color: white;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    text-decoration: none;
+    z-index: 1000;
+    transition: 0.2s;
+}
+
+.wa-float:hover {
+    transform: scale(1.1);
+    background: #1ebe5d;
+}
+
+.wa-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.wa-modal.show {
+    display: flex;
+}
+
+.wa-modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+    max-width: 380px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.wa-modal-content h3 {
+    margin: 0 0 10px;
+}
+
+.wa-modal-content p {
+    margin: 0 0 20px;
+    color: #555;
+}
+
+.wa-btn {
+    display: inline-block;
+    background: #25D366;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    margin: 5px;
+}
+
+.wa-btn:hover {
+    opacity: 0.9;
+    color: white;
+}
 </style>
 </head>
 
@@ -199,6 +271,18 @@ button:hover {
     <button onclick="submitOrder()" style="background: green;">Submit Order</button>
 </div>
 
+<div id="waModal" class="wa-modal">
+    <div class="wa-modal-content">
+        <h3>✅ Order Placed!</h3>
+        <p>Your order has been received. Get a confirmation on WhatsApp:</p>
+        <a id="waConfirmLink" href="#" target="_blank" class="wa-btn">📲 Send to WhatsApp</a>
+        <br>
+        <button onclick="closeWAModal()" style="margin-top:10px;background:#aaa;">Close</button>
+    </div>
+</div>
+
+<a class="wa-float" href="https://wa.me/255792196957" target="_blank" title="Chat on WhatsApp">💬</a>
+
 <script>
 let cart = [];
 
@@ -273,9 +357,15 @@ function submitOrder(){
     })
     .then(res => res.json())
     .then(data => {
-        alert(data.message);
         if(data.success){
             clearCart();
+            if(data.waLinks?.customerLink){
+                showOrderConfirm(data.waLinks.customerLink);
+            } else {
+                alert(data.message);
+            }
+        } else {
+            alert(data.message);
         }
     })
     .catch(() => alert('Order failed'));
@@ -284,6 +374,15 @@ function submitOrder(){
 function logout(){
     localStorage.clear();
     window.location.href = '/';
+}
+
+function showOrderConfirm(waLink){
+    document.getElementById('waConfirmLink').href = waLink;
+    document.getElementById('waModal').classList.add('show');
+}
+
+function closeWAModal(){
+    document.getElementById('waModal').classList.remove('show');
 }
 
 function updateCart(){

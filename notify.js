@@ -1,19 +1,7 @@
-const africastalking = require('africastalking');
+const SELLER_PHONE = process.env.SELLER_PHONE || '255792196957';
 
-const AT_USERNAME = process.env.AT_USERNAME;
-const AT_API_KEY = process.env.AT_API_KEY;
-const SELLER_PHONE = process.env.SELLER_PHONE;
-
-let client = null;
-
-if (AT_USERNAME && AT_API_KEY) {
-  client = africastalking({
-    username: AT_USERNAME,
-    apiKey: AT_API_KEY
-  });
-  console.log('Africa\'s Talking client initialized');
-} else {
-  console.warn('AT_USERNAME or AT_API_KEY missing — notifications disabled');
+function waLink(phone, message) {
+  return `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
 }
 
 function formatItems(items) {
@@ -24,52 +12,22 @@ function calcTotal(items) {
   return items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 }
 
-async function sendSMS(to, message) {
-  if (!client) return;
-  try {
-    const sms = client.SMS;
-    const resp = await sms.send({ to: [to], message });
-    console.log('SMS sent:', resp);
-    return resp;
-  } catch (err) {
-    console.error('SMS failed:', err);
-  }
-}
-
-async function sendWhatsApp(to, message) {
-  if (!client) return;
-  try {
-    const wa = client.WhatsApp;
-    const resp = await wa.send({ to, message });
-    console.log('WhatsApp sent:', resp);
-    return resp;
-  } catch (err) {
-    console.error('WhatsApp failed:', err);
-  }
-}
-
-async function notifyOrder(customerName, customerPhone, items) {
+function notifyOrder(customerName, customerPhone, items) {
   const total = calcTotal(items);
   const itemList = formatItems(items);
 
-  const sellerMsg = `New order from ${customerName}! Items: ${itemList}. Total: $${total}. Customer: ${customerPhone}`;
-  const customerMsg = `Hi ${customerName}, thank you for your order! Items: ${itemList}. Total: $${total}. We'll process it shortly.`;
+  const sellerMsg = `New order from ${customerName}!%0AItems: ${itemList}%0ATotal: $${total}%0ACustomer: ${customerPhone}`;
+  const customerMsg = `Hi ${customerName}, thank you for your order!%0AItems: ${itemList}%0ATotal: $${total}%0AWe'll process it shortly.`;
 
-  const results = await Promise.allSettled([
-    sendSMS(SELLER_PHONE, sellerMsg),
-    sendSMS(customerPhone, customerMsg),
-    sendWhatsApp(SELLER_PHONE, sellerMsg),
-    sendWhatsApp(customerPhone, customerMsg),
-  ]);
+  const sellerLink = `https://wa.me/${SELLER_PHONE.replace(/[^0-9]/g, '')}?text=${sellerMsg}`;
+  const customerLink = customerPhone
+    ? `https://wa.me/${customerPhone.replace(/[^0-9]/g, '')}?text=${customerMsg}`
+    : null;
 
-  results.forEach((r, i) => {
-    const label = ['SMS->Seller', 'SMS->Customer', 'WA->Seller', 'WA->Customer'][i];
-    if (r.status === 'fulfilled') {
-      console.log(`${label}: OK`);
-    } else {
-      console.warn(`${label}: ${r.reason?.message || 'failed'}`);
-    }
-  });
+  console.log('WhatsApp seller link:', sellerLink);
+  if (customerLink) console.log('WhatsApp customer link:', customerLink);
+
+  return { sellerLink, customerLink };
 }
 
-module.exports = { notifyOrder };
+module.exports = { notifyOrder, waLink, SELLER_PHONE };

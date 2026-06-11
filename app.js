@@ -140,17 +140,19 @@ app.post('/submit-order', (req, res) => {
 
         console.log('Order saved:', result);
 
+        let waLinks = { sellerLink: null, customerLink: null };
+
         if (email) {
             db.query('SELECT phone FROM users WHERE email = ?', [email], (err2, rows) => {
                 if (!err2 && rows.length > 0) {
-                    notifyOrder(user_name, rows[0].phone, items);
+                    waLinks = notifyOrder(user_name, rows[0].phone, items);
                 } else {
                     console.warn('Could not look up phone for', email);
                 }
             });
         }
 
-        return res.json({ success: true, message: 'Order placed successfully!' });
+        return res.json({ success: true, message: 'Order placed successfully!', waLinks });
 
     });
 
